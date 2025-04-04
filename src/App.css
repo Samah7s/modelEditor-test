@@ -19,28 +19,27 @@ body {
 
 .app-header-container {
   display: flex;
-  justify-content: space-between; /* Разнести элементы по краям */
-  align-items: center; /* Выровнять по вертикали */
-  margin-bottom: 25px; /* Отступ снизу как у заголовка */
-  border-bottom: 1px solid #eee; /* Линия под контейнером */
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+  border-bottom: 1px solid #eee;
   padding-bottom: 15px;
 }
 
 .app-header {
-  margin-bottom: 0; /* Убираем отступ у заголовка, т.к. он теперь у контейнера */
-  border-bottom: none; /* Убираем линию у заголовка */
+  margin-bottom: 0;
+  border-bottom: none;
   padding-bottom: 0;
 }
 
 .button-add {
-  background-color: #17a2b8; /* Бирюзовый цвет */
-  padding: 10px 18px; /* Чуть больше edit, меньше save/cancel */
+  background-color: #17a2b8;
+  padding: 10px 18px;
   font-weight: 500;
 }
 
-
 .no-models-message {
-  grid-column: 1 / -1; /* Растянуть на все колонки грида */
+  grid-column: 1 / -1;
   text-align: center;
   color: #6c757d;
   padding: 30px;
@@ -49,9 +48,8 @@ body {
   border: 1px dashed #ddd;
 }
 
-
 .param-editor-item {
-  margin-bottom: 20px; /* Увеличим немного отступ */
+  margin-bottom: 20px;
 }
 
 .models-grid {
@@ -157,4 +155,10 @@ body {
 .button-close {
   padding: 10px 20px;
   background-color: #dc3545;
+}
+
+.divider {
+  margin: 20px 0;
+  border: none;
+  border-top: 1px solid #eee;
 }

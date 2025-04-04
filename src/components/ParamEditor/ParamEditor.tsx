@@ -1,6 +1,8 @@
 import React, { ChangeEvent } from "react";
 import "./ParamEditor.css";
 
+const COLOR_PARAM_NAME = "Цвет";
+
 type ParamType = "string" | "number" | "select";
 
 export interface Param {
@@ -14,6 +16,7 @@ interface InputComponentProps {
   param: Param;
   value: string;
   onChange: (value: string) => void;
+  availableColors?: Color[]; // Pass available colors specifically for the select input
 }
 
 const StringInput: React.FC<InputComponentProps> = ({
@@ -48,25 +51,38 @@ const SelectInput: React.FC<InputComponentProps> = ({
   param,
   value,
   onChange,
-}) => (
-  <select
-    id={`param-${param.id}`}
-    value={value}
-    className="param-editor-select"
-    onChange={(e: ChangeEvent<HTMLSelectElement>) => onChange(e.target.value)}
-  >
-    {!value && (
-      <option value="" disabled>
-        -- Выберите --
-      </option>
-    )}
-    {param.options?.map((option) => (
-      <option key={option} value={option}>
-        {option}
-      </option>
-    ))}
-  </select>
-);
+  availableColors,
+}) => {
+  const options =
+    param.name === COLOR_PARAM_NAME && availableColors
+      ? availableColors.map((color) => color.name)
+      : param.options ?? [];
+
+  return (
+    <select
+      id={`param-${param.id}`}
+      value={value}
+      className="param-editor-select"
+      onChange={(e: ChangeEvent<HTMLSelectElement>) => onChange(e.target.value)}
+    >
+      {!value && options.length > 0 && (
+        <option value="" disabled>
+          -- Выберите --
+        </option>
+      )}
+      {param.name === COLOR_PARAM_NAME && availableColors?.length === 0 && (
+        <option value="" disabled>
+          -- Нет доступных цветов --
+        </option>
+      )}
+      {options.map((option) => (
+        <option key={option} value={option}>
+          {option}
+        </option>
+      ))}
+    </select>
+  );
+};
 
 const inputComponentRegistry: Record<
   ParamType,
@@ -75,12 +91,16 @@ const inputComponentRegistry: Record<
   string: StringInput,
   number: NumberInput,
   select: SelectInput,
-  // Возможность расшерения новых типов
 };
 
 interface ParamValue {
   paramId: number;
   value: string;
+}
+
+export interface Color {
+  id: number;
+  name: string;
 }
 
 export interface Model {
@@ -90,108 +110,143 @@ export interface Model {
   colors: Color[];
 }
 
-interface Color {
-  id: number;
-  name: string;
-}
-
 interface Props {
   params: Param[];
   model: Model;
+  onModelChange?: (model: Model) => void;
 }
 
 interface State {
-  paramValues: Map<number, string>;
+  currentModel: Model;
 }
 
 class ParamEditor extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props);
     this.state = {
-      paramValues: this.initializeParamValues(),
+      currentModel: this.initializeModel(props.model, props.params),
     };
   }
 
   componentDidUpdate(prevProps: Props) {
-    if (prevProps.model !== this.props.model) {
-      this.setState({ paramValues: this.initializeParamValues() });
+    if (
+      prevProps.model.id !== this.props.model.id ||
+      prevProps.params !== this.props.params
+    ) {
+      this.setState({
+        currentModel: this.initializeModel(this.props.model, this.props.params),
+      });
     }
   }
 
-  private initializeParamValues(): Map<number, string> {
-    const values = new Map<number, string>();
+  private initializeModel(model: Model, params: Param[]): Model {
+    const newParamValues = new Map<number, string>();
     const currentValuesMap = new Map(
-      this.props.model.paramValues.map((pValue) => [
-        pValue.paramId,
-        pValue.value,
-      ])
+      model.paramValues.map((pValue) => [pValue.paramId, pValue.value])
     );
-    this.props.params.forEach((param) => {
+
+    params.forEach((param) => {
       const existingValue = currentValuesMap.get(param.id);
-      values.set(param.id, existingValue ?? this.getDefaultValue(param.type));
+      let defaultValue = this.getDefaultValue(param.type);
+      if (param.name === COLOR_PARAM_NAME && model.colors.length > 0) {
+        const isValidCurrentColor = model.colors.some(
+          (c) => c.name === existingValue
+        );
+        defaultValue = isValidCurrentColor ? existingValue ?? "" : "";
+      }
+
+      newParamValues.set(param.id, existingValue ?? defaultValue);
     });
-    return values;
+
+    return {
+      ...model,
+      paramValues: Array.from(newParamValues).map(([paramId, value]) => ({
+        paramId,
+        value,
+      })),
+    };
   }
 
   private getDefaultValue(type: ParamType): string {
     switch (type) {
       case "number":
         return "0";
+      case "string":
+      case "select":
       default:
         return "";
     }
   }
 
-  // public static getDefaultValue(type: ParamType): string {
-  //   switch (type) {
-  //     case "number":
-  //       return "0";
-  //     // Добавим случай для select, если нужно дефолтное значение из options
-  //     // case "select":
-  //     //    return options?.[0] ?? ""; // Например, первый option
-  //     default:
-  //       return "";
-  //   }
-  // }
-
   private handleChange = (paramId: number, value: string) => {
-    this.setState((prev) => {
-      const newValues = new Map(prev.paramValues);
-      newValues.set(paramId, value);
-      return { paramValues: newValues };
-    });
+    this.setState(
+      (prev) => {
+        const updatedParamValues = prev.currentModel.paramValues.map((pValue) =>
+          pValue.paramId === paramId ? { ...pValue, value } : pValue
+        );
+        if (!updatedParamValues.some((pv) => pv.paramId === paramId)) {
+          updatedParamValues.push({ paramId, value });
+        }
+
+        const updatedModel = {
+          ...prev.currentModel,
+          paramValues: updatedParamValues,
+        };
+        return { currentModel: updatedModel };
+      },
+      () => {
+        if (this.props.onModelChange) {
+          this.props.onModelChange(this.state.currentModel);
+        }
+      }
+    );
   };
 
-  public getModel(): Model {
-    return {
-      ...this.props.model,
-      paramValues: Array.from(this.state.paramValues).map(
-        ([paramId, value]) => ({
-          paramId,
-          value,
-        })
-      ),
-    };
+  public getEditedModel(): Model {
+    return this.state.currentModel;
   }
 
+  public setModelName = (name: string) => {
+    this.setState(
+      (prev) => ({
+        currentModel: {
+          ...prev.currentModel,
+          name: name,
+        },
+      }),
+      () => {
+        if (this.props.onModelChange) {
+          this.props.onModelChange(this.state.currentModel);
+        }
+      }
+    );
+  };
+
   private renderInput(param: Param) {
-    const value = this.state.paramValues.get(param.id) ?? "";
+    const paramValue = this.state.currentModel.paramValues.find(
+      (pValue) => pValue.paramId === param.id
+    );
+    const value = paramValue?.value ?? this.getDefaultValue(param.type);
     const InputComponent = inputComponentRegistry[param.type];
     if (!InputComponent) {
-      console.warn(`No input component registerd for type: ${param.type}`);
+      console.warn(`No input component registered for type: ${param.type}`);
       return (
         <span className="param-editor-unsupported">
-          Unsupported parameter type : {param.type}
+          Unsupported parameter type: {param.type}
         </span>
       );
     }
-    return (
-      <InputComponent
-        param={param}
-        value={value}
-        onChange={(newValue) => this.handleChange(param.id, newValue)}
-      />
-    );
+    const inputProps: InputComponentProps = {
+      param,
+      value,
+      onChange: (newValue) => this.handleChange(param.id, newValue),
+      ...(param.type === "select" &&
+        param.name === COLOR_PARAM_NAME && {
+          availableColors: this.state.currentModel.colors,
+        }),
+    };
+
+    return <InputComponent {...inputProps} />;
   }
 
   render() {
