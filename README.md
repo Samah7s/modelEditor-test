@@ -19,8 +19,8 @@
 
 1.  **Клонируйте репозиторий:**
     ```bash
-    git clone <URL_вашего_репозитория>
-    cd <имя_папки_репозитория>
+    git clone https://github.com/Samah7s/modelEditor-test.git
+    cd modelEditor-test
     ```
 2.  **Установите зависимости:**
     Убедитесь, что у вас установлены [Node.js] или [Yarn].
