@@ -4,51 +4,8 @@ import ParamEditor, {
   Param,
 } from "./components/ParamEditor/ParamEditor";
 import Modal from "./components/Modal/Modal";
-import {
-  cancelButton,
-  editButton,
-  modalActions,
-  modelCard,
-  paramItem,
-  paramsContainer,
-  saveButton,
-} from "./AppStyles.tsx";
-
-const mockData = [
-  {
-    id: 1,
-    name: "Повседневное платье",
-    paramValues: [
-      { paramId: 1, value: "повседневное" },
-      { paramId: 2, value: "макси" },
-      { paramId: 3, value: "5" },
-      { paramId: 4, value: "Синий" },
-    ],
-    colors: [],
-  },
-  {
-    id: 2,
-    name: "Выходное платье",
-    paramValues: [
-      { paramId: 1, value: "выходное" },
-      { paramId: 2, value: "мини" },
-      { paramId: 3, value: "5" },
-      { paramId: 4, value: "Синий" },
-    ],
-    colors: [],
-  },
-  {
-    id: 3,
-    name: "Пальто",
-    paramValues: [
-      { paramId: 1, value: "выходное" },
-      { paramId: 2, value: "медиум" },
-      { paramId: 3, value: "5" },
-      { paramId: 4, value: "Синий" },
-    ],
-    colors: [],
-  },
-];
+import "./App.css";
+import { mockData } from "./data/models";
 
 const App: React.FC = () => {
   const [models, setModels] = useState<Model[]>(mockData);
@@ -78,45 +35,51 @@ const App: React.FC = () => {
       setEditingModel(null);
     }
   };
+  const handleCancel = () => {
+    setEditingModel(null);
+  };
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h1>Модели продукции</h1>
-
-      <div style={{ display: "grid", gap: "10px" }}>
+    <div className="app-container">
+      <h1 className="app-header">Модели продукции</h1>
+      <div className="models-grid">
         {models.map((model) => (
-          <div key={model.id} style={modelCard}>
+          <div key={model.id} className="model-card">
             <h3>{model.name}</h3>
-            <div style={paramsContainer}>
-              {model.paramValues.map((pValue) => (
-                <div key={pValue.paramId} style={paramItem}>
-                  <strong>
-                    {params.find((p) => p.id === pValue.paramId)?.name}:
-                  </strong>
-                  <span>{pValue.value}</span>
-                </div>
-              ))}
+            <div className="params-container">
+              {params.map((param) => {
+                const paramValue = model.paramValues.find(
+                  (pValue) => pValue.paramId === param.id
+                );
+                const displayValue = paramValue?.value ?? "N/A";
+                return (
+                  <div key={param.id} className="param-item">
+                    <strong>{param.name}:</strong>
+                    <span>{displayValue}</span>
+                  </div>
+                );
+              })}
             </div>
-            <button style={editButton} onClick={() => setEditingModel(model)}>
+            <button
+              className="button button-edit"
+              onClick={() => setEditingModel(model)}
+            >
               Редактировать
             </button>
           </div>
         ))}
       </div>
 
-      <Modal isOpen={!!editingModel} onClose={() => setEditingModel(null)}>
+      <Modal isOpen={!!editingModel} onClose={handleCancel}>
         {editingModel && (
           <>
             <h2>Редактирование: {editingModel.name}</h2>
             <ParamEditor ref={editorRef} params={params} model={editingModel} />
-            <div style={modalActions}>
-              <button style={saveButton} onClick={handleSave}>
+            <div className="modal-actions">
+              <button className="button button-save" onClick={handleSave}>
                 Сохранить
               </button>
-              <button
-                style={cancelButton}
-                onClick={() => setEditingModel(null)}
-              >
+              <button className="button button-cancel" onClick={handleCancel}>
                 Отмена
               </button>
             </div>

@@ -1,6 +1,6 @@
-import React from "react";
+import React, { ChangeEvent } from "react";
+import "./ParamEditor.css";
 
-// Типы данных
 type ParamType = "string" | "number" | "select";
 
 export interface Param {
@@ -9,6 +9,74 @@ export interface Param {
   type: ParamType;
   options?: string[];
 }
+
+interface InputComponentProps {
+  param: Param;
+  value: string;
+  onChange: (value: string) => void;
+}
+
+const StringInput: React.FC<InputComponentProps> = ({
+  param,
+  value,
+  onChange,
+}) => (
+  <input
+    type="text"
+    id={`param-${param.id}`}
+    value={value}
+    className="param-editor-input"
+    onChange={(e: ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}
+  />
+);
+
+const NumberInput: React.FC<InputComponentProps> = ({
+  onChange,
+  param,
+  value,
+}) => (
+  <input
+    type="number"
+    id={`param-${param.id}`}
+    value={value}
+    className="param-editor-input"
+    onChange={(e: ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}
+  />
+);
+
+const SelectInput: React.FC<InputComponentProps> = ({
+  param,
+  value,
+  onChange,
+}) => (
+  <select
+    id={`param-${param.id}`}
+    value={value}
+    className="param-editor-select"
+    onChange={(e: ChangeEvent<HTMLSelectElement>) => onChange(e.target.value)}
+  >
+    {!value && (
+      <option value="" disabled>
+        -- Выберите --
+      </option>
+    )}
+    {param.options?.map((option) => (
+      <option key={option} value={option}>
+        {option}
+      </option>
+    ))}
+  </select>
+);
+
+const inputComponentRegistry: Record<
+  ParamType,
+  React.FC<InputComponentProps>
+> = {
+  string: StringInput,
+  number: NumberInput,
+  select: SelectInput,
+  // Возможность расшерения новых типов
+};
 
 interface ParamValue {
   paramId: number;
@@ -52,14 +120,15 @@ class ParamEditor extends React.Component<Props, State> {
 
   private initializeParamValues(): Map<number, string> {
     const values = new Map<number, string>();
+    const currentValuesMap = new Map(
+      this.props.model.paramValues.map((pValue) => [
+        pValue.paramId,
+        pValue.value,
+      ])
+    );
     this.props.params.forEach((param) => {
-      const savedValue = this.props.model.paramValues.find(
-        (pValue) => pValue.paramId === param.id
-      );
-      values.set(
-        param.id,
-        savedValue?.value || this.getDefaultValue(param.type)
-      );
+      const existingValue = currentValuesMap.get(param.id);
+      values.set(param.id, existingValue ?? this.getDefaultValue(param.type));
     });
     return values;
   }
@@ -72,6 +141,18 @@ class ParamEditor extends React.Component<Props, State> {
         return "";
     }
   }
+
+  // public static getDefaultValue(type: ParamType): string {
+  //   switch (type) {
+  //     case "number":
+  //       return "0";
+  //     // Добавим случай для select, если нужно дефолтное значение из options
+  //     // case "select":
+  //     //    return options?.[0] ?? ""; // Например, первый option
+  //     default:
+  //       return "";
+  //   }
+  // }
 
   private handleChange = (paramId: number, value: string) => {
     this.setState((prev) => {
@@ -94,50 +175,33 @@ class ParamEditor extends React.Component<Props, State> {
   }
 
   private renderInput(param: Param) {
-    const value = this.state.paramValues.get(param.id) || "";
-
-    switch (param.type) {
-      case "number":
-        return (
-          <input
-            type="number"
-            value={value}
-            onChange={(e) => this.handleChange(param.id, e.target.value)}
-          />
-        );
-
-      case "select":
-        return (
-          <select
-            value={value}
-            onChange={(e) => this.handleChange(param.id, e.target.value)}
-          >
-            {param.options?.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-        );
-
-      default:
-        return (
-          <input
-            type="text"
-            value={value}
-            onChange={(e) => this.handleChange(param.id, e.target.value)}
-          />
-        );
+    const value = this.state.paramValues.get(param.id) ?? "";
+    const InputComponent = inputComponentRegistry[param.type];
+    if (!InputComponent) {
+      console.warn(`No input component registerd for type: ${param.type}`);
+      return (
+        <span className="param-editor-unsupported">
+          Unsupported parameter type : {param.type}
+        </span>
+      );
     }
+    return (
+      <InputComponent
+        param={param}
+        value={value}
+        onChange={(newValue) => this.handleChange(param.id, newValue)}
+      />
+    );
   }
 
   render() {
-    console.log("getModel: ", this.getModel());
     return (
       <div>
         {this.props.params.map((param) => (
-          <div key={param.id}>
-            <label>{param.name}</label>
+          <div key={param.id} className="param-editor-item">
+            <label htmlFor={`param-${param.id}`} className="param-editor-label">
+              {param.name}
+            </label>
             {this.renderInput(param)}
           </div>
         ))}

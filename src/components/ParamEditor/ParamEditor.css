@@ -1,0 +1,35 @@
+.param-editor-item {
+  margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+}
+
+.param-editor-label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+  color: #333;
+}
+
+.param-editor-input,
+.param-editor-select {
+  padding: 8px 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1em;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.param-editor-input:focus,
+.param-editor-select:focus {
+  border-color: #007bff;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.param-editor-unsupported {
+  color: #dc3545;
+  font-style: italic;
+  font-size: 0.9em;
+}

@@ -1,19 +1,43 @@
-import { modalOverlay, closeButton, modalContent } from "./ModalStyles";
+import { useEffect } from "react";
+import "./Modal.css";
 
-const Modal: React.FC<{
+interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   children: React.ReactNode;
-}> = ({ isOpen, onClose, children }) => {
+}
+
+const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children }) => {
+  const overlayClass = isOpen
+    ? "modal-overlay modal-overlay-open"
+    : "modal-overlay";
+
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
+  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
   return (
-    <div style={modalOverlay}>
-      <div style={modalContent}>
+    <div className={overlayClass} onClick={handleOverlayClick}>
+      <div className="modal-content">
         {children}
-        <button style={closeButton} onClick={onClose}>
+        {/* <button style={closeButton} onClick={onClose}>
           Закрыть
-        </button>
+        </button> */}
       </div>
     </div>
   );
